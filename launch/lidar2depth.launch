@@ -1,0 +1,12 @@
+<launch>
+  <node name="lidar2depth" pkg="lidar2depth" type="lidar2depth" output="screen">
+    <remap from="lidar" to="livox/lidar"/>
+    <remap from="depth" to="livox/depth"/>
+    <param name="max_cloud_size" value="2000000"/>
+    <param name="map_frame" value="camera_init"/>
+    <param name="lidar_frame" value="aft_mapped"/>
+    <param name="camera_frame" value="camera_optical_frame"/>
+    <param name="camera_intrinsics" value="$(find lidar2depth)/config/camera.yml"/>
+    <param name="filter_kernel" value="5"/>
+  </node>
+</launch>

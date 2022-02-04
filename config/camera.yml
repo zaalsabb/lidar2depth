@@ -1,0 +1,16 @@
+%YAML:1.0
+---
+image_height: 720
+image_width: 1280
+camera_name: intel_d455
+camera_matrix: !!opencv-matrix
+  rows: 3
+  cols: 3
+  dt: f
+  data: [638.2584838867188, 0.0, 635.6729736328125, 0.0, 636.5195922851562, 366.147705078125, 0.0, 0.0, 1.0]
+distortion_model: plumb_bob
+distortion_coefficients: !!opencv-matrix
+  rows: 1
+  cols: 5
+  dt: f
+  data: [-0.05449240654706955, 0.06359218806028366, 0.00016181448881980032, -0.0009868403431028128, -0.02028072439134121]
