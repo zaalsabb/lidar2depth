@@ -1,13 +1,14 @@
+// ros header files
 #include <ros/ros.h>
 #include <ros/console.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/Image.h>
 #include <image_transport/image_transport.h>
 #include <sensor_msgs/image_encodings.h>
-
+// opencv header files
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
-
+// pcl header files
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -19,6 +20,7 @@
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl_ros/transforms.h>
+// #include <pcl/filters/voxel_grid.h> 
 
 using namespace std;
 
@@ -35,6 +37,8 @@ class Lidar2Depth {
             ros::param::get("lidar2depth/max_cloud_size", max_cloud_size);
             ros::param::get("lidar2depth/camera_intrinsics", camera_intrinsics);
             ros::param::get("lidar2depth/filter_kernel", ksize);
+            ros::param::get("lidar2depth/image_width", w);
+            ros::param::get("lidar2depth/image_height", h);
 
             if (getCameraInfoFromYAML(camera_intrinsics)==1){
                 ROS_ERROR("Cannot open file %s", camera_intrinsics.c_str());
@@ -67,7 +71,7 @@ class Lidar2Depth {
         int ksize = 0;
 
         string camera_intrinsics;
-        float fx, fy, cx, cy, h, w;
+        float fx, fy, cx, cy, camera_w, camera_h, h, w;
 
         void projectToDepth();
         void cullCloud();

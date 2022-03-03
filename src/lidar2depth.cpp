@@ -13,11 +13,25 @@ void Lidar2Depth::cullCloud(){
         {
             inliers->indices.push_back(i);
         }
+        // for (int i = 0; i < cloud_map->points.size(); i++)
+        // {
+        //     if (i % (cloud_map->points.size()/max_cloud_size) != 0)
+        //     {
+        //         inliers->indices.push_back(i);
+        //     }
+        // }
 
         extract.setInputCloud(cloud_map);
         extract.setIndices(inliers);
         extract.setNegative(true);
         extract.filter(*cloud_map);
+        
+        // pcl::VoxelGrid<pcl::PointXYZ> voxelgrid; 
+        // voxelgrid.setInputCloud(cloud_map);
+        // voxelgrid.setLeafSize(0.01f, 0.01f, 0.01f);
+        // voxelgrid.filter(*cloud_map);
+        
+
     }
 }
 
@@ -37,8 +51,8 @@ void Lidar2Depth::projectToDepth(){
         float Z = temp_cloud_camera->points[i].z;
         float X = temp_cloud_camera->points[i].x;
         float Y = temp_cloud_camera->points[i].y;
-        float u = fx*X/Z + cx;
-        float v = fy*Y/Z + cy;
+        float u = (fx*X/Z + cx)*(float)w/(float)camera_w;
+        float v = (fy*Y/Z + cy)*(float)h/(float)camera_h;
         if (u>0 && u<depth_image.cols && v>0 && v<depth_image.rows){
             float Zi = depth_image.at<unsigned short>(v,u);
             if (Z>0 & (Z<Zi || Zi==0)){
@@ -46,7 +60,7 @@ void Lidar2Depth::projectToDepth(){
             }            
         }
     }
-    if (ksize > 0){
+    if (ksize > 1){
         if (ksize%2 == 0){
             ksize += 1;
         }
@@ -60,8 +74,11 @@ void Lidar2Depth::projectToDepth(){
         depth_image.convertTo(depth_image, CV_16UC1);  
     }  
 
+    cv::resize(depth_image, depth_image, cv::Size(camera_w, camera_h));
+
     ros::Time time = ros::Time::now();
     sensor_msgs::ImagePtr msg = cv_bridge::CvImage(std_msgs::Header(), sensor_msgs::image_encodings::TYPE_16UC1, depth_image).toImageMsg();    
+    msg->header.stamp = time;
 
     pub.publish(msg);
 
@@ -109,8 +126,8 @@ int Lidar2Depth::getCameraInfoFromYAML(string filename)
 
     cv::Mat K;
     fs["camera_matrix"] >> K;    
-    fs["image_height"] >> h;    
-    fs["image_width"] >> w;    
+    fs["image_height"] >> camera_h;    
+    fs["image_width"] >> camera_w;    
 
     fx = K.at<float>(0,0);
     fy = K.at<float>(1,1);

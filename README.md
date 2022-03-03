@@ -1,2 +1,2 @@
-# Raytracing
-Internal repository for projecting point cloud to depth map.
+# Lidar2Depth
+Internal repository for projecting a lidar point cloud to a depth map.
