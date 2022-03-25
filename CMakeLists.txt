@@ -16,6 +16,8 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_ros
 )
 
+find_package(OpenCV REQUIRED)
+
 catkin_package(
   INCLUDE_DIRS CATKIN_DEPENDS roscpp rospy std_msgs tf2_ros
 )
@@ -27,5 +29,5 @@ include_directories(
 
 add_executable(lidar2depth src/lidar2depth.cpp)
 target_link_libraries(lidar2depth 
-  ${catkin_LIBRARIES}  #${PCL_LIBRARIES} ${OpenCV_LIBS} ${CERES_LIBRARIES}
+  ${catkin_LIBRARIES} ${OpenCV_LIBS} #${PCL_LIBRARIES}  ${CERES_LIBRARIES}
 )

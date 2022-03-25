@@ -39,6 +39,7 @@ class Lidar2Depth {
             ros::param::get("lidar2depth/filter_kernel", ksize);
             ros::param::get("lidar2depth/image_width", w);
             ros::param::get("lidar2depth/image_height", h);
+            ros::param::get("lidar2depth/frame_rate", frame_rate);
 
             if (getCameraInfoFromYAML(camera_intrinsics)==1){
                 ROS_ERROR("Cannot open file %s", camera_intrinsics.c_str());
@@ -72,6 +73,7 @@ class Lidar2Depth {
 
         string camera_intrinsics;
         float fx, fy, cx, cy, camera_w, camera_h, h, w;
+        int frame_rate = 30;
 
         void projectToDepth();
         void cullCloud();

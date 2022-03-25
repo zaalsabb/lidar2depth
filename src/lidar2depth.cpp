@@ -148,7 +148,7 @@ int main (int argc, char** argv){
 
     Lidar2Depth lidar2depth(nh);
 
-    ros::Rate rate(30.0);
+    ros::Rate rate(lidar2depth.frame_rate);
     while (nh.ok()){
 
         lidar2depth.projectToDepth();
