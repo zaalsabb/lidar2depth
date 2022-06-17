@@ -1,0 +1,12 @@
+<launch>
+  <rosparam command="load" file="$(find mapping_kit)/config/r3live_config.yaml" />
+
+  <node name="lidar2mesh" pkg="lidar2depth" type="lidar2mesh" output="screen">
+    <remap from="lidar" to="cloud_registered"/>
+    <param name="num_scans" value="100"/>
+    <param name="voxel_size" value="0.2"/>
+    <param name="search_radius" value="2"/>
+    <param name="max_nearest_neighbour" value="100"/>
+  </node>
+  
+</launch>

@@ -12,14 +12,23 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   sensor_msgs
+  geometry_msgs
   std_msgs
   tf2_ros
+  message_generation
 )
+
+ add_message_files(
+   FILES
+   Mesh.msg
+ )
+generate_messages(DEPENDENCIES std_msgs geometry_msgs)
 
 find_package(OpenCV REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS CATKIN_DEPENDS roscpp rospy std_msgs tf2_ros
+  CATKIN_DEPENDS message_runtime
 )
 
 include_directories(
@@ -28,6 +37,14 @@ include_directories(
 )
 
 add_executable(lidar2depth src/lidar2depth.cpp)
+add_executable(lidar2mesh src/lidar2mesh.cpp)
+
 target_link_libraries(lidar2depth 
   ${catkin_LIBRARIES} ${OpenCV_LIBS} #${PCL_LIBRARIES}  ${CERES_LIBRARIES}
 )
+
+target_link_libraries(lidar2mesh 
+  ${catkin_LIBRARIES} ${OpenCV_LIBS} #${PCL_LIBRARIES}  ${CERES_LIBRARIES}
+)
+
+add_dependencies(lidar2mesh lidar2depth_generate_messages_cpp)

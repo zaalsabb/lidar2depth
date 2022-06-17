@@ -37,11 +37,20 @@ void Lidar2Depth::cullCloud(){
 
 void Lidar2Depth::projectToDepth(){
 
-    try{
-        listener.lookupTransform(camera_frame, map_frame, ros::Time(), transform_camera_map);
-    }
-    catch (tf::TransformException ex){
-        ROS_ERROR("%s",ex.what());
+    if (tf_available){
+        try{            
+            if (lidar_frame != ""){
+                listener.lookupTransform(lidar_frame, map_frame, image_msg.header.stamp, transform_lidar_map);
+                tf::Transform transform_camera_map_ = transform_camera_lidar*transform_lidar_map;
+                transform_camera_map.setData(transform_camera_map_);
+            } else if (camera_frame != ""){
+                listener.lookupTransform(camera_frame, map_frame, image_msg.header.stamp, transform_camera_map);
+            }
+        }
+        catch (tf::TransformException ex){
+            // ROS_ERROR("%s",ex.what());         
+            return;
+        }
     }
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr temp_cloud_camera(new pcl::PointCloud<pcl::PointXYZ>);
@@ -76,35 +85,29 @@ void Lidar2Depth::projectToDepth(){
 
     cv::resize(depth_image, depth_image, cv::Size(camera_w, camera_h));
 
-    ros::Time time = ros::Time::now();
+    // ros::Time time = ros::Time::now();
     sensor_msgs::ImagePtr msg = cv_bridge::CvImage(std_msgs::Header(), sensor_msgs::image_encodings::TYPE_16UC1, depth_image).toImageMsg();    
-    msg->header.stamp = time;
+    msg->header.stamp = image_msg.header.stamp;
 
     pub.publish(msg);
+    pub3.publish(image_msg);
+    get_new_img = true;
 
     cullCloud();
+
 
 }
 
 void Lidar2Depth::cloudCallback (const sensor_msgs::PointCloud2ConstPtr& msg)
 {
-    try{
-        listener.lookupTransform(map_frame, lidar_frame, ros::Time(), transform_map_lidar);
-    }
-    catch (tf::TransformException ex){
-        ROS_ERROR("%s",ex.what());
-    }
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr temp_cloud_lidar(new pcl::PointCloud<pcl::PointXYZ>);
-    pcl::PointCloud<pcl::PointXYZ>::Ptr temp_cloud_map(new pcl::PointCloud<pcl::PointXYZ>);
 
     pcl::PCLPointCloud2 pcl_pc2;
     pcl_conversions::toPCL(*msg, pcl_pc2);
     pcl::fromPCLPointCloud2(pcl_pc2,*temp_cloud_lidar);
 
-    pcl_ros::transformPointCloud(*temp_cloud_lidar, *temp_cloud_map, transform_map_lidar);
-
-    *cloud_map += *temp_cloud_map;    
+    *cloud_map += *temp_cloud_lidar;    
 
     sensor_msgs::PointCloud2 cloud_publish;
     pcl::toROSMsg(*cloud_map,cloud_publish);
@@ -113,6 +116,26 @@ void Lidar2Depth::cloudCallback (const sensor_msgs::PointCloud2ConstPtr& msg)
 
     pub2.publish(cloud_publish);
 }
+
+void Lidar2Depth::imageCallback (const sensor_msgs::Image& msg)
+{    
+    if (get_new_img){
+        cv::Mat img = cv_bridge::toCvCopy(msg, msg.encoding)->image;
+        cv::Mat img_undist;
+        cv::undistort(img, img_undist, camera_matrix, distortion_coefficients_mat);
+        sensor_msgs::ImagePtr image_msg_ = cv_bridge::CvImage(msg.header, msg.encoding, img_undist).toImageMsg();    
+        image_msg = *image_msg_;
+        get_new_img = false;
+    }
+}
+
+void Lidar2Depth::calib_rotation_callback (const geometry_msgs::Twist& msg)
+{
+    tf::Quaternion q = tf::Quaternion(msg.linear.x,msg.angular.z,0.0f) *transform_camera_lidar.getRotation();
+    transform_camera_map.setRotation(q);
+}
+void Lidar2Depth::calib_translation_callback (const geometry_msgs::Twist& msg)
+{}
 
 int Lidar2Depth::getCameraInfoFromYAML(string filename)
 {
@@ -150,11 +173,11 @@ int main (int argc, char** argv){
 
     ros::Rate rate(lidar2depth.frame_rate);
     while (nh.ok()){
-
+        
         lidar2depth.projectToDepth();
+        rate.sleep();
 
         ros::spinOnce();
-        rate.sleep();
     }
 
     ros::spin();

@@ -1,0 +1,25 @@
+<launch>
+  <rosparam command="load" file="$(find mapping_kit)/config/r3live_config.yaml" />
+
+  <include file="$(find mapping_kit)/launch/include/undistort.launch">
+    <arg name="image_topic" value="/intel/color/image_raw"/>
+    <arg name="camera_info_topic" value="/intel/color/camera_info"/>
+    <arg name="compressed" value="true"/>
+    <arg name="throttle" value="false"/>  
+  </include>
+
+  <node name="lidar2depth" pkg="lidar2depth" type="lidar2depth" output="screen">
+    <remap from="color" to="intel/color/image_raw_rect"/>
+    <remap from="lidar" to="livox/lidar"/>
+    <remap from="depth" to="livox/depth"/>
+    <remap from="color_sync" to="livox/color_sync/image_raw"/>
+    <param name="max_cloud_size" value="2000000"/>
+    <param name="map_frame" value="camera_init"/>
+    <param name="lidar_frame" value="camera_init"/>
+    <param name="filter_kernel" value="3"/>
+    <param name="depth_width" value="1280"/>
+    <param name="depth_height" value="720"/>
+    <param name="frame_rate" value="3"/>
+  </node>
+
+</launch>
