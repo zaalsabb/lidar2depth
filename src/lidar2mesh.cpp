@@ -2,35 +2,20 @@
 
 using namespace std;
 
-pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB>);
 
 
-void Lidar2Mesh::cullCloud(){
-    if (cloud->points.size() > max_cloud_size)
-    {
-        pcl::PointIndices::Ptr inliers(new pcl::PointIndices());
-        pcl::ExtractIndices<pcl::PointXYZ> extract;
-        for (int i = 0; i < cloud->points.size()-max_cloud_size; i++)
-        {
-            inliers->indices.push_back(i);
-        }
-
-        extract.setInputCloud(cloud);
-        extract.setIndices(inliers);
-        extract.setNegative(true);
-        extract.filter(*cloud);
-
-        pcl::VoxelGrid<pcl::PointXYZ> voxelgrid; 
-        voxelgrid.setInputCloud(cloud);
-        voxelgrid.setLeafSize(voxel_size, voxel_size, voxel_size);
-        voxelgrid.filter(*cloud);        
-    }
+void Lidar2Mesh::cullCloud(float leaf_size){
+    pcl::VoxelGrid<pcl::PointXYZRGB> voxelgrid; 
+    voxelgrid.setInputCloud(cloud);
+    voxelgrid.setLeafSize(leaf_size, leaf_size, leaf_size);
+    voxelgrid.filter(*cloud);   
 }
 
 void Lidar2Mesh::cloudCallback (const sensor_msgs::PointCloud2ConstPtr& msg)
 {
 
-    pcl::PointCloud<pcl::PointXYZ>::Ptr temp_cloud_lidar(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr temp_cloud_lidar(new pcl::PointCloud<pcl::PointXYZRGB>);
 
     pcl::PCLPointCloud2 pcl_pc2;
     pcl_conversions::toPCL(*msg, pcl_pc2);
@@ -40,14 +25,16 @@ void Lidar2Mesh::cloudCallback (const sensor_msgs::PointCloud2ConstPtr& msg)
     i_scans++;
 
     if (i_scans == num_scans){
-        cout<<i_scans<<endl;
-        cullCloud();
-        publishMesh();
+        // cout<<i_scans<<endl;
+        cullCloud(voxel_size_cloud);
+        pcl::io::savePCDFileBinary(save_directory+"/cloud"+to_string(cloud_id)+".pcd", *cloud);
+        cout<<"saved submap"<<endl;
+        cloud_id++;
+        // cullCloud(voxel_size_mesh);
+        // publishMesh();
         cloud->clear();
         i_scans = 0;
     }
-
-    
 
 }
 
@@ -55,12 +42,21 @@ void Lidar2Mesh::publishMesh(){
     if (cloud->points.size()==0){
         return;
     }
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_xyz (new pcl::PointCloud<pcl::PointXYZ>);
+    cloud_xyz->points.resize(cloud->size());
+    for (size_t i = 0; i < cloud_xyz->points.size(); i++) {
+        cloud_xyz->points[i].x = cloud->points[i].x;
+        cloud_xyz->points[i].y = cloud->points[i].y;
+        cloud_xyz->points[i].z = cloud->points[i].z;
+    }
+
     // Normal estimation*
     pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> n;
     pcl::PointCloud<pcl::Normal>::Ptr normals (new pcl::PointCloud<pcl::Normal>);
     pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
-    tree->setInputCloud (cloud);
-    n.setInputCloud (cloud);
+    tree->setInputCloud (cloud_xyz);
+    n.setInputCloud (cloud_xyz);
     n.setSearchMethod (tree);
     n.setKSearch (10);
     n.compute (*normals);
@@ -68,7 +64,7 @@ void Lidar2Mesh::publishMesh(){
 
     // Concatenate the XYZ and normal fields*
     pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals (new pcl::PointCloud<pcl::PointNormal>);
-    pcl::concatenateFields (*cloud, *normals, *cloud_with_normals);
+    pcl::concatenateFields (*cloud_xyz, *normals, *cloud_with_normals);
     //* cloud_with_normals = cloud + normals
 
     // Create search tree*
@@ -100,21 +96,59 @@ void Lidar2Mesh::publishMesh(){
     std::vector<int> states = gp3.getPointStates();
 
     msg_mesh = lidar2depth::Mesh(); 
+    msg_mesh.triangles.resize(3*triangles.polygons.size());
     for (int i=0; i<triangles.polygons.size(); i++){
-        msg_mesh.triangles.push_back(triangles.polygons[i].vertices[0]);
-        msg_mesh.triangles.push_back(triangles.polygons[i].vertices[1]);
-        msg_mesh.triangles.push_back(triangles.polygons[i].vertices[2]);
+        msg_mesh.triangles[i*3    ] = triangles.polygons[i].vertices[0];
+        msg_mesh.triangles[i*3 + 1] = triangles.polygons[i].vertices[1];
+        msg_mesh.triangles[i*3 + 2] = triangles.polygons[i].vertices[2];
     }
-
+    msg_mesh.vertices.resize(cloud->points.size());
     for (int i=0; i<cloud->points.size(); i++){
-        geometry_msgs::Point p = geometry_msgs::Point();
-        p.x = cloud->points[i].x;
-        p.y = cloud->points[i].y;
-        p.z = cloud->points[i].z;        
-        msg_mesh.vertices.push_back(p);
+        msg_mesh.vertices[i].x = cloud->points[i].x;
+        msg_mesh.vertices[i].y = cloud->points[i].y;
+        msg_mesh.vertices[i].z = cloud->points[i].z;        
     }
-
     pub.publish(msg_mesh);
+    pcl::io::save(save_directory+"/mesh.ply", triangles);
+    cloud_xyz->clear();
+}
+
+
+bool Lidar2Mesh::getMapService(lidar2depth::GetMap::Request& req, lidar2depth::GetMap::Response& res){
+    res.submaps.resize(1);
+    cout<<"Get Map Service Called.."<<endl;        
+
+    cloud->clear();
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr temp_cloud_lidar(new pcl::PointCloud<pcl::PointXYZRGB>);
+    for (int i = 0; i < cloud_id; i++){
+        pcl::io::loadPCDFile(save_directory+"/cloud"+to_string(i)+".pcd", *temp_cloud_lidar);
+        *cloud += *temp_cloud_lidar;  
+    }
+    cullCloud(voxel_size_cloud);
+    pcl::io::savePCDFileBinary(save_directory+"/cloud.pcd", *cloud);
+
+    pcl::toROSMsg(*cloud.get(),res.submaps[0].pointcloud );
+    cullCloud(voxel_size_mesh);
+    publishMesh();
+        
+    pcl::PolygonMesh triangles;
+    pcl::io::loadPLYFile(save_directory+"/mesh.ply", triangles);
+    res.submaps[0].mesh.triangles.resize(3*triangles.polygons.size());
+    for (int j=0; j<triangles.polygons.size(); j++){
+        res.submaps[0].mesh.triangles[j*3    ] = triangles.polygons[j].vertices[0];
+        res.submaps[0].mesh.triangles[j*3 + 1] = triangles.polygons[j].vertices[1];
+        res.submaps[0].mesh.triangles[j*3 + 2] = triangles.polygons[j].vertices[2];
+    }
+    pcl::PointCloud<pcl::PointXYZ> verts;
+    pcl::fromPCLPointCloud2 (triangles.cloud, verts);
+    res.submaps[0].mesh.vertices.resize(verts.points.size());
+    for (int j=0; j<verts.points.size(); j++){
+        res.submaps[0].mesh.vertices[j].x = verts.points[j].x;
+        res.submaps[0].mesh.vertices[j].y = verts.points[j].y;
+        res.submaps[0].mesh.vertices[j].z = verts.points[j].z;
+    }
+    cout<<"Meshing Finished. Sending Map..."<<endl;        
+    return true;
 }
 
 int main (int argc, char** argv){
@@ -126,14 +160,7 @@ int main (int argc, char** argv){
     ros::NodeHandle nh;
 
     Lidar2Mesh lidar2mesh(nh);
-    // while (nh.ok()){
 
-    //     sleep(lidar2mesh.wait_period);
-
-    //     lidar2mesh.publishMesh();
-
-    //     ros::spinOnce();
-    // }
     ros::spin();
     return 0;
 

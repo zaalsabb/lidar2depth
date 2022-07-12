@@ -21,8 +21,15 @@ find_package(catkin REQUIRED COMPONENTS
  add_message_files(
    FILES
    Mesh.msg
+   Submap.msg
  )
-generate_messages(DEPENDENCIES std_msgs geometry_msgs)
+
+ add_service_files(
+  FILES
+  GetMap.srv
+)
+
+generate_messages(DEPENDENCIES std_msgs geometry_msgs sensor_msgs)
 
 find_package(OpenCV REQUIRED)
 

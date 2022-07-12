@@ -37,6 +37,10 @@ void Lidar2Depth::cullCloud(){
 
 void Lidar2Depth::projectToDepth(){
 
+    if (cloud_map->points.size()==0){
+        return;
+    }
+
     if (tf_available){
         try{            
             if (lidar_frame != ""){
