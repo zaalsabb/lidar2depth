@@ -132,12 +132,12 @@ class Lidar2Depth {
         bool get_new_img = true;
         bool tf_available = true;
         ros::Time t_now;
-        sensor_msgs::CompressedImage image_msg;
+        sensor_msgs::Image image_msg;
 
         void projectToDepth();
         void cullCloud();
         void cloudCallback(const sensor_msgs::PointCloud2ConstPtr& cloud_msg);
-        void imageCallback(const sensor_msgs::CompressedImage& image);
+        void imageCallback(const sensor_msgs::CompressedImageConstPtr& image);
         void calib_rotation_callback(const geometry_msgs::Twist& rotation);
         void calib_translation_callback(const geometry_msgs::Twist& translation);
         int getCameraInfoFromYAML(string filename);

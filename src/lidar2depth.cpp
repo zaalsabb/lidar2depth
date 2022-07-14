@@ -121,13 +121,13 @@ void Lidar2Depth::cloudCallback (const sensor_msgs::PointCloud2ConstPtr& msg)
     pub2.publish(cloud_publish);
 }
 
-void Lidar2Depth::imageCallback (const sensor_msgs::CompressedImage& msg)
+void Lidar2Depth::imageCallback (const sensor_msgs::CompressedImageConstPtr& msg)
 {    
     if (get_new_img){
-        cv::Mat img = cv_bridge::toCvCopy(msg, msg.encoding)->image;
+        cv::Mat img = cv_bridge::toCvCopy( msg, sensor_msgs::image_encodings::BGR8 )->image;
         cv::Mat img_undist;
         cv::undistort(img, img_undist, camera_matrix, distortion_coefficients_mat);
-        sensor_msgs::ImagePtr image_msg_ = cv_bridge::CvImage(msg.header, msg.encoding, img_undist).toCompressedImageMsg();    
+        sensor_msgs::ImagePtr image_msg_ = cv_bridge::CvImage(msg->header, sensor_msgs::image_encodings::BGR8, img_undist).toImageMsg();    
         image_msg = *image_msg_;
         get_new_img = false;
     }
