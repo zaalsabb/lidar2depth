@@ -127,7 +127,7 @@ void Lidar2Depth::imageCallback (const sensor_msgs::CompressedImage& msg)
         cv::Mat img = cv_bridge::toCvCopy(msg, msg.encoding)->image;
         cv::Mat img_undist;
         cv::undistort(img, img_undist, camera_matrix, distortion_coefficients_mat);
-        sensor_msgs::ImagePtr image_msg_ = cv_bridge::CvImage(msg.header, msg.encoding, img_undist).toImageMsg();    
+        sensor_msgs::ImagePtr image_msg_ = cv_bridge::CvImage(msg.header, msg.encoding, img_undist).toCompressedImageMsg();    
         image_msg = *image_msg_;
         get_new_img = false;
     }

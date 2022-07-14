@@ -132,7 +132,7 @@ class Lidar2Depth {
         bool get_new_img = true;
         bool tf_available = true;
         ros::Time t_now;
-        sensor_msgs::Image image_msg;
+        sensor_msgs::CompressedImage image_msg;
 
         void projectToDepth();
         void cullCloud();
