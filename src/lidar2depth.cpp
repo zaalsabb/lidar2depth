@@ -121,7 +121,7 @@ void Lidar2Depth::cloudCallback (const sensor_msgs::PointCloud2ConstPtr& msg)
     pub2.publish(cloud_publish);
 }
 
-void Lidar2Depth::imageCallback (const sensor_msgs::Image& msg)
+void Lidar2Depth::imageCallback (const sensor_msgs::CompressedImage& msg)
 {    
     if (get_new_img){
         cv::Mat img = cv_bridge::toCvCopy(msg, msg.encoding)->image;
