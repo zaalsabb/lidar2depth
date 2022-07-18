@@ -116,8 +116,16 @@ void Lidar2Mesh::publishMesh(){
 
 bool Lidar2Mesh::getMapService(lidar2depth::GetMap::Request& req, lidar2depth::GetMap::Response& res){
     res.submaps.resize(1);
+
     cout<<"Get Map Service Called.."<<endl;        
 
+    if (cloud_id == 0){
+        cout<<"No submaps have been saved yet.."<<endl;        
+        return true;
+    }
+
+    res.submaps.resize(1);
+      
     cloud->clear();
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr temp_cloud_lidar(new pcl::PointCloud<pcl::PointXYZRGB>);
     for (int i = 0; i < cloud_id; i++){
