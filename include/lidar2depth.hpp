@@ -137,7 +137,7 @@ class Lidar2Depth {
         void projectToDepth();
         void cullCloud();
         void cloudCallback(const sensor_msgs::PointCloud2ConstPtr& cloud_msg);
-        void imageCallback(const sensor_msgs::CompressedImageConstPtr& image);
+        void imageCallback(const sensor_msgs::Image& image);
         void calib_rotation_callback(const geometry_msgs::Twist& rotation);
         void calib_translation_callback(const geometry_msgs::Twist& translation);
         int getCameraInfoFromYAML(string filename);

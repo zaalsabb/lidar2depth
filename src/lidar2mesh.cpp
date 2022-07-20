@@ -28,6 +28,7 @@ void Lidar2Mesh::cloudCallback (const sensor_msgs::PointCloud2ConstPtr& msg)
         // cout<<i_scans<<endl;
         cullCloud(voxel_size_cloud);
         pcl::io::savePCDFileBinary(save_directory+"/cloud"+to_string(cloud_id)+".pcd", *cloud);
+        saveNumFiles(save_directory);
         cout<<"saved submap"<<endl;
         cloud_id++;
         // cullCloud(voxel_size_mesh);
@@ -35,7 +36,6 @@ void Lidar2Mesh::cloudCallback (const sensor_msgs::PointCloud2ConstPtr& msg)
         cloud->clear();
         i_scans = 0;
     }
-
 }
 
 void Lidar2Mesh::publishMesh(){
@@ -121,10 +121,12 @@ bool Lidar2Mesh::getMapService(lidar2depth::GetMap::Request& req, lidar2depth::G
     if (cloud_id == 0){
         cout<<"No submaps have been saved yet.."<<endl;        
         return true;
+    } else {
+        cout << to_string(cloud_id) + " submaps detected.." << endl;
     }
 
     res.submaps.resize(1);
-
+      
     cloud->clear();
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr temp_cloud_lidar(new pcl::PointCloud<pcl::PointXYZRGB>);
     for (int i = 0; i < cloud_id; i++){
@@ -158,6 +160,30 @@ bool Lidar2Mesh::getMapService(lidar2depth::GetMap::Request& req, lidar2depth::G
     return true;
 }
 
+
+int Lidar2Mesh::getNumFiles (string fdir){
+  string line;
+  ifstream myfile (fdir+"/num_submaps.txt");
+  if (myfile.is_open())
+  {
+    getline (myfile,line);
+    myfile.close();
+    return stoi(line);
+  }
+
+  else {
+    cout << "No previous submaps found..."<<endl;
+      return 0;
+  } 
+}
+
+void Lidar2Mesh::saveNumFiles (string fdir){
+  ofstream myfile;
+  myfile.open (fdir+"/num_submaps.txt");
+  myfile << to_string(cloud_id);
+  myfile.close();
+}
+
 int main (int argc, char** argv){
 
     ROS_INFO("Node started");
@@ -167,6 +193,7 @@ int main (int argc, char** argv){
     ros::NodeHandle nh;
 
     Lidar2Mesh lidar2mesh(nh);
+    lidar2mesh.cloud_id = lidar2mesh.getNumFiles(lidar2mesh.save_directory);
 
     ros::spin();
     return 0;

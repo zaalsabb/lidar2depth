@@ -1,3 +1,6 @@
+// standard cpp headers
+#include <iostream>
+#include <fstream>
 // ros header files
 #include <ros/ros.h>
 #include <ros/console.h>
@@ -25,8 +28,6 @@
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl_ros/transforms.h>
-	
-
 #include <pcl/io/pcd_io.h>
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/features/normal_3d.h>
@@ -78,6 +79,6 @@ class Lidar2Mesh {
         void publishMesh();
         void cullCloud(float leaf_size);
         bool getMapService(lidar2depth::GetMap::Request& req, lidar2depth::GetMap::Response& res);
-
-
+        int  getNumFiles (string fdir);
+        void saveNumFiles (string fdir);
 };
