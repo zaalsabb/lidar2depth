@@ -3,7 +3,7 @@
 using namespace std;
 
 pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB>);
-
+pcl::PolygonMesh triangles;
 
 void Lidar2Mesh::cullCloud(float leaf_size){
     pcl::VoxelGrid<pcl::PointXYZRGB> voxelgrid; 
@@ -35,6 +35,10 @@ void Lidar2Mesh::cloudCallback (const sensor_msgs::PointCloud2ConstPtr& msg)
         // publishMesh();
         cloud->clear();
         i_scans = 0;
+
+        if (!load_prev & cloud_id % 10 == 0){
+            saveMap();
+        }        
     }
 }
 
@@ -73,7 +77,6 @@ void Lidar2Mesh::publishMesh(){
 
     // Initialize objects
     pcl::GreedyProjectionTriangulation<pcl::PointNormal> gp3;
-    pcl::PolygonMesh triangles;
 
     // Set the maximum distance between connected points (maximum edge length)
     gp3.setSearchRadius (search_radius);
@@ -126,22 +129,25 @@ bool Lidar2Mesh::getMapService(lidar2depth::GetMap::Request& req, lidar2depth::G
     }
 
     res.submaps.resize(1);
-      
-    cloud->clear();
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr temp_cloud_lidar(new pcl::PointCloud<pcl::PointXYZRGB>);
-    for (int i = 0; i < cloud_id; i++){
-        pcl::io::loadPCDFile(save_directory+"/cloud"+to_string(i)+".pcd", *temp_cloud_lidar);
-        *cloud += *temp_cloud_lidar;  
-    }
-    cullCloud(voxel_size_cloud);
-    pcl::io::savePCDFileBinary(save_directory+"/cloud.pcd", *cloud);
+    
+    if (!load_prev){
 
-    pcl::toROSMsg(*cloud.get(),res.submaps[0].pointcloud );
-    cullCloud(voxel_size_mesh);
-    publishMesh();
+        cloud->clear();
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr temp_cloud_lidar(new pcl::PointCloud<pcl::PointXYZRGB>);
+        for (int i = 0; i < cloud_id; i++){
+            pcl::io::loadPCDFile(save_directory+"/cloud"+to_string(i)+".pcd", *temp_cloud_lidar);
+            *cloud += *temp_cloud_lidar;  
+        }
+        cullCloud(voxel_size_cloud);
+        pcl::io::savePCDFileBinary(save_directory+"/cloud.pcd", *cloud);
+
+        pcl::toROSMsg(*cloud.get(),res.submaps[0].pointcloud );
+        cullCloud(voxel_size_mesh);
+        publishMesh();
         
-    pcl::PolygonMesh triangles;
-    pcl::io::loadPLYFile(save_directory+"/mesh.ply", triangles);
+        pcl::io::loadPLYFile(save_directory+"/mesh.ply", triangles);
+    }
+
     res.submaps[0].mesh.triangles.resize(3*triangles.polygons.size());
     for (int j=0; j<triangles.polygons.size(); j++){
         res.submaps[0].mesh.triangles[j*3    ] = triangles.polygons[j].vertices[0];
@@ -159,7 +165,6 @@ bool Lidar2Mesh::getMapService(lidar2depth::GetMap::Request& req, lidar2depth::G
     cout<<"Meshing Finished. Sending Map..."<<endl;        
     return true;
 }
-
 
 int Lidar2Mesh::getNumFiles (string fdir){
   string line;
@@ -184,6 +189,24 @@ void Lidar2Mesh::saveNumFiles (string fdir){
   myfile.close();
 }
 
+void Lidar2Mesh::saveMap()
+{
+    cloud->clear();
+
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr temp_cloud_lidar(new pcl::PointCloud<pcl::PointXYZRGB>);
+    for (int i = 0; i < cloud_id; i++){
+        pcl::io::loadPCDFile(save_directory+"/cloud"+to_string(i)+".pcd", *temp_cloud_lidar);
+        *cloud += *temp_cloud_lidar;  
+    }
+
+    cullCloud(voxel_size_cloud);
+    pcl::io::savePCDFileBinary(save_directory+"/cloud.pcd", *cloud);
+
+    cullCloud(voxel_size_mesh);
+    publishMesh();
+    
+}
+
 int main (int argc, char** argv){
 
     ROS_INFO("Node started");
@@ -193,9 +216,14 @@ int main (int argc, char** argv){
     ros::NodeHandle nh;
 
     Lidar2Mesh lidar2mesh(nh);
-    lidar2mesh.cloud_id = lidar2mesh.getNumFiles(lidar2mesh.save_directory);
+    if (lidar2mesh.load_prev){
+        lidar2mesh.cloud_id = lidar2mesh.getNumFiles(lidar2mesh.save_directory);
+        pcl::io::loadPLYFile(lidar2mesh.save_directory+"/mesh.ply", triangles);
+        pcl::io::loadPCDFile(lidar2mesh.save_directory+"/cloud.pcd", *cloud);
+    }
+        
+    ros::spin();    
 
-    ros::spin();
     return 0;
 
 }

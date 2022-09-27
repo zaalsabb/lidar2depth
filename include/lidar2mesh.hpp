@@ -4,6 +4,7 @@
 // ros header files
 #include <ros/ros.h>
 #include <ros/console.h>
+#include <signal.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/Image.h>
 #include <geometry_msgs/Twist.h>
@@ -51,6 +52,7 @@ class Lidar2Mesh {
             ros::param::get("lidar2mesh/search_radius", search_radius);
             ros::param::get("lidar2mesh/max_nearest_neighbour", max_nearest_neighbour);
             ros::param::get("lidar2mesh/save_directory", save_directory);
+            ros::param::get("lidar2mesh/load_prev", load_prev);
 
             sub = nh_.subscribe ("lidar", 1, &Lidar2Mesh::cloudCallback, this);
             pub = nh_.advertise<lidar2depth::Mesh>("mesh", 1);
@@ -72,6 +74,7 @@ class Lidar2Mesh {
         float search_radius = 2.0f; 
         int max_nearest_neighbour = 100; 
         int cloud_id = 0;   
+        bool load_prev = false;
         string save_directory;    
         lidar2depth::Mesh msg_mesh;
 
@@ -81,4 +84,5 @@ class Lidar2Mesh {
         bool getMapService(lidar2depth::GetMap::Request& req, lidar2depth::GetMap::Response& res);
         int  getNumFiles (string fdir);
         void saveNumFiles (string fdir);
+        void saveMap();
 };

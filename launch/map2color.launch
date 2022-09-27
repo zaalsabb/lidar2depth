@@ -1,0 +1,22 @@
+<launch>
+  <rosparam command="load" file="$(find mapping_kit)/config/r3live_config.yaml" />
+  <param name="use_sim_time" value="true"/>
+
+  <node name="map2color" pkg="lidar2depth" type="map2color" output="screen">
+    <param name="map_frame" value="world"/>
+    <param name="camera_frame" value="camera"/>
+    <param name="scalar_field" value="false"/>
+    <param name="depth_rescale" value="1"/>
+
+    <param name="pcd_file" value="/home/zaid/datasets/processed/r3live_output/rgb_pt.pcd"/>
+  </node>
+
+  <node name="image_publisher" pkg="lidar2depth" type="image_publisher.py" output="screen">
+    <param name="save_directory" value="/home/zaid/datasets/processed"/>    
+    <param name="map_frame" value="world"/>
+    <param name="camera_frame" value="camera"/>
+    <param name="compressed" value="false"/>
+    <param name="frame_rate" value="2"/>
+  </node>  
+
+</launch>
