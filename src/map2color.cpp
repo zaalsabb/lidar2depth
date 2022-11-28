@@ -57,18 +57,24 @@ void Map2Color::projectToDepth(){
             //     }                  
             // } 
             if (Z==Zi){
-                // colorize point with image that is closest to the point
+                // colorize point with image pixel that is in the depth buffer
                 float u = fx*X/Z + cx;
                 float v = fy*Y/Z + cy;                
                 cv::Vec3b bgrPixel = img_undist.at<cv::Vec3b>(v, u);                    
-                cloud_pixel_b[i].push_back(bgrPixel.val[0]);
-                cloud_pixel_g[i].push_back(bgrPixel.val[1]);
-                cloud_pixel_r[i].push_back(bgrPixel.val[2]);
-
-                cloud_map->points[i].b = median(cloud_pixel_b[i]);
-                cloud_map->points[i].g = median(cloud_pixel_g[i]);
-                cloud_map->points[i].r = median(cloud_pixel_r[i]);
                 
+                // use median filter to colorize point
+                // cloud_pixel_b[i].push_back(bgrPixel.val[0]);
+                // cloud_pixel_g[i].push_back(bgrPixel.val[1]);
+                // cloud_pixel_r[i].push_back(bgrPixel.val[2]);
+
+                // cloud_map->points[i].b = median(cloud_pixel_b[i]);
+                // cloud_map->points[i].g = median(cloud_pixel_g[i]);
+                // cloud_map->points[i].r = median(cloud_pixel_r[i]);
+
+                cloud_map->points[i].b = bgrPixel.val[0];
+                cloud_map->points[i].g = bgrPixel.val[1];
+                cloud_map->points[i].r = bgrPixel.val[2];
+
                 cloud_depth_buffer[i] = Z;
             }                         
         }
@@ -85,7 +91,7 @@ void Map2Color::imageCallback (const sensor_msgs::Image& msg)
 {    
     if (get_new_img){
         get_new_img = false;
-        std::cout << "colorizing pointcloud using image " + to_string(i_img) << endl;      
+        std::cout << "colorizing pointcloud using image " + to_string(msg.header.seq) << endl;      
         cv::Mat img = cv_bridge::toCvCopy(msg, msg.encoding)->image;        
         cv::undistort(img, img_undist, camera_matrix, distortion_coefficients_mat);
         t_stamp = msg.header.stamp;

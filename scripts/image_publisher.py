@@ -20,6 +20,7 @@ class Node:
         self.fdir = rospy.get_param('~save_directory',default='/tmp')
         self.frame_rate = rospy.get_param('~frame_rate',default=1) 
         self.compressed = rospy.get_param('~compressed',default=False) 
+        self.step = rospy.get_param('~step',default=1) 
 
         self.camera_frame = rospy.get_param('~camera_frame') 
         self.map_frame = rospy.get_param('~map_frame',default='map')         
@@ -43,13 +44,13 @@ class Node:
 
         cv_bridge = CvBridge()
 
-        for i in range(len(self.images_files)):
+        for i in range(0,len(self.images_files),self.step):
             time.sleep(1/float(self.frame_rate))
             stamp = rospy.Time.now()
             p = self.poses[i,1:4]
             q = self.poses[i,4:]
             self.send_tf(self.map_frame,self.camera_frame,p,q,stamp)
-            I = cv2.imread(os.path.join(self.images_dir,'{}.jpg'.format(i+1)))
+            I = cv2.imread(os.path.join(self.images_dir,'{}.png'.format(i+1)))
             if self.compressed:
                 msg = cv_bridge.cv2_to_compressed_imgmsg(I)
             else:

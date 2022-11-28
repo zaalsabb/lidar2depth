@@ -1,0 +1,28 @@
+<launch>
+  <rosparam command="load" file="$(find mapping_kit)/config/r3live_ig3.1_config.yaml" />
+
+  <arg name="save_directory" default="$(env HOME)/datasets/processed"/>
+
+  <node name="bag2depth" pkg="lidar2depth" type="bag2depth" output="screen">
+    <param name="scans_dir" value="$(arg save_directory)/scans"/>    
+    <param name="max_cloud_size" value="1000000"/>
+    <param name="future_slider" value="0.2"/>
+    <param name="depth_rescale" value="1"/>    
+  </node>
+
+  <node name="lidar_timestamps_publisher" pkg="lidar2depth" type="timestamps_publisher.py" output="screen">
+    <param name="timestamps" value="$(arg save_directory)/scans/timestamps.txt"/>
+  </node>  
+
+  <node name="poses_publisher" pkg="lidar2depth" type="poses_publisher.py" output="screen">
+    <param name="poses" value="$(arg save_directory)/images/poses.csv"/>
+    <param name="timestamps" value="$(arg save_directory)/images/timestamps.txt"/>
+  </node>  
+
+  <include file="$(find mapping_kit)/launch/processing/bag2images.launch">
+    <arg name="depth_topic" default="depth"/>
+    <arg name="save_directory" default="$(arg save_directory)/depth2"/>
+    <arg name="save_timestamps" default="false"/>
+  </include>  
+
+</launch>

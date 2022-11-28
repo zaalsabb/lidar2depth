@@ -1,0 +1,6 @@
+<launch>
+  <node name="submap2lidar" pkg="lidar2depth" type="submap2lidar" output="screen">
+    <param name="save_directory" value="$(env HOME)/datasets/22-09-27-EIT-processed"/>
+    <param name="frame_rate" value="1"/>
+  </node>  
+</launch>
