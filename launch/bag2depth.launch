@@ -1,5 +1,5 @@
 <launch>
-  <rosparam command="load" file="$(find mapping_kit)/config/r3live_ig3.1_config.yaml" />
+  <rosparam command="load" file="$(find mapping_kit)/config/r3live_ig3_config.yaml" />
 
   <arg name="save_directory" default="$(env HOME)/datasets/processed"/>
 
