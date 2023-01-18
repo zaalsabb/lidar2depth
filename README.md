@@ -10,6 +10,11 @@ cd ..
 catkin_make
 ```
 
+## ROS Requirements
+```
+sudo apt-get install ros-noetic-cv-bridge ros-noetic-pcl-conversions ros-noetic-tf ros-noetic-message-filters ros-noetic-image-transport* python-catkin-tools
+```
+
 ## Running
 
 ```
