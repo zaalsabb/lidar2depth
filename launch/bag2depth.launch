@@ -5,7 +5,7 @@
   <arg name="future_slider" default="0.2"/>
   <arg name="depth_rescale" default="0.5"/>
 
-  <rosparam command="load" file="$(find mapping_kit)/config/r3live_ig3_config.yaml" />
+  <rosparam command="load" file="$(find lidar2depth)/config/r3live_ig3_config.yaml" />
 
   <node name="bag2depth" pkg="lidar2depth" type="bag2depth" output="screen">
     <param name="scans_dir" value="$(arg save_directory)/scans"/>    
