@@ -15,7 +15,7 @@ class Node:
 
     def __init__(self):
 
-        rospy.init_node('images_publisher')
+        rospy.init_node('images_publisher', anonymous=True)
 
         self.fdir = rospy.get_param('~save_directory',default='/tmp')
         self.frame_rate = rospy.get_param('~frame_rate',default=1) 

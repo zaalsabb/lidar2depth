@@ -1,6 +1,0 @@
-devel_space: /home/zaid/projects/lidar2depth/devel
-install: false
-install_space: /home/zaid/projects/lidar2depth/install
-profile: default
-source_space: /home/zaid/projects/lidar2depth/src
-workspace: /home/zaid/projects/lidar2depth

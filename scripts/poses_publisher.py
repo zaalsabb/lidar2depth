@@ -8,7 +8,7 @@ class Node:
 
     def __init__(self):
 
-        rospy.init_node('poses_publisher')
+        rospy.init_node('poses_publisher', anonymous=True)
 
         f_poses = rospy.get_param('~poses',default=None)
         f_timestamps = rospy.get_param('~timestamps',default=None)

@@ -64,18 +64,20 @@ void Bag2Depth::projectToDepth(const geometry_msgs::Pose pose){
         float v = (fy*Y/Z + cy)*(float)depth_h/(float)h;
         if (u>0 && u<depth_image.cols && v>0 && v<depth_image.rows){
             float Zi = depth_image.at<unsigned short>(v,u);
-            if (Z>0 & (Z<Zi || Zi==0)){
+            if (Z>0 & (Z<Zi || Zi==0) & Z<=max_depth){
                 depth_image.at<unsigned short>(v,u) = Z*1000;
             }            
         }
     }
 
-    cv::resize(depth_image, depth_image, cv::Size(w, h), cv::INTER_NEAREST);
+    // cv::resize(depth_image, depth_image, cv::Size(w, h), cv::INTER_NEAREST);
 
     // ros::Time time = ros::Time::now();
     sensor_msgs::ImagePtr msg = cv_bridge::CvImage(std_msgs::Header(), sensor_msgs::image_encodings::TYPE_16UC1, depth_image).toImageMsg();    
 
     pub.publish(msg);
+
+    cv::imwrite(depth_dir+"/"+to_string(curr_pose_index+1)+".png",depth_image);
 
 }
 
@@ -110,17 +112,18 @@ void Bag2Depth::readBag(){
         
         // find closest pose time to scans time
         double curr_pose_time = camera_poses[curr_pose_index].header.stamp.toSec();            
-        if (scan_time > curr_pose_time){
-            std::cout << "\nGenerating depth image " + to_string(curr_pose_index+1) << endl;
+        while (scan_time > curr_pose_time){
+            std::cout << "Generating depth image " + to_string(curr_pose_index+1)+"/"+to_string(camera_poses.size()) << std::endl;
             projectToDepth(camera_poses[curr_pose_index].pose);
             curr_pose_index++;
+            curr_pose_time = camera_poses[curr_pose_index].header.stamp.toSec();                        
         } 
         // std::cout << "lidar scans slider time:"+ to_string(scan_time) + ", depth image time:" +  to_string(curr_pose_time) << endl; 
     }
 
     // generating remaining poses after all lidar scans were processed
     while (curr_pose_index < camera_poses.size()+1){
-        std::cout << "\nGenerating depth image " + to_string(curr_pose_index+1) << endl;
+        std::cout << "Generating depth image " + to_string(curr_pose_index+1)+"/"+to_string(camera_poses.size()) << std::endl;
         projectToDepth(camera_poses[curr_pose_index].pose);
         curr_pose_index++;
     }
@@ -155,15 +158,24 @@ void Bag2Depth::readLidarStamps(){
 
 }
 
+void Bag2Depth::sleep_for_secs(){
+    if (sleep_init > 0){
+        cout << "sleeping for " + to_string(sleep_init)+ " second\n" << endl;
+        std::this_thread::sleep_for(std::chrono::milliseconds(((int)sleep_init*1000)));   
+    } 
+}
+
 int main (int argc, char** argv){
 
     ROS_INFO("Node started");
 
-    ros::init (argc, argv, "bag2depth");
+    ros::init (argc, argv, "bag2depth", ros::init_options::AnonymousName);
 
     ros::NodeHandle nh;
 
     Bag2Depth bag2depth(nh);
+
+    bag2depth.sleep_for_secs();
     bag2depth.readPoses();
     bag2depth.readLidarStamps();    
     bag2depth.readBag();
